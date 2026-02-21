@@ -1,4 +1,4 @@
-# Kitsune Architecture v0.02
+# Kitsune Architecture v0.0.2
 
 ## Generic DB Worker for Multi-Service Use (Draft)
 
