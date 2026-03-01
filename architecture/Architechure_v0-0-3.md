@@ -123,3 +123,48 @@ Add a status lookup flow so clients can submit async work and query completion b
 - Audit/compliance archiver (immutable event history).
 - Billing/metering service (charge only for terminal outcomes).
 - Webhook dispatcher (pushes final status to external clients).
+
+---
+  2. Kafka Event Structs (internal/models/)
+
+  Struct: CommandEvent
+  Topic: db-events
+  Key Fields: event_id (required, no omitempty), service, command, command_version, schema_version, payload, idempotency_key, occurred_at, trace_id, metadata
+  ────────────────────────────────────────
+  Struct: LogEvent
+  Topic: app-logs
+  Key Fields: event_id, trace_id, log (LogPayload), metadata
+  ────────────────────────────────────────
+  Struct: ResultEvent
+  Topic: result
+  Key Fields: event_id, service, command, status, error_code, error_message, processed_at, trace_id
+
+  ---
+  3. Sub-structs (embedded in above)
+
+  ┌─────────────────┬────────────────────────────────────────────────────────────────────────┐
+  │     Struct      │                                 Fields       │
+  ├─────────────────┼────────────────────────────────────────────────────────────────────────┤
+  │ LogPayload      │ level, message       │
+  ├─────────────────┼────────────────────────────────────────────────────────────────────────┤
+  │ RequestMetadata │ idempotency_key (optional, omitempty), source       │
+  ├─────────────────┼────────────────────────────────────────────────────────────────────────┤
+  │ EventMetadata   │ idempotency_key (required), source, producer identity, optionaltenant │
+  └─────────────────┴────────────────────────────────────────────────────────────────────────┘
+
+  ---
+  4. DB / Storage Models
+
+  ┌───────────────────┬────────────────────────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │      Struct       │              Purpose               │                    Key Fields                                              │
+  ├───────────────────┼────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ IdempotencyRecord │ Deduplication tracking (v0.0.2)    │ service, idempotency_key, state (processed/duplicate/failed_retryable/failed_terminal), processed_at │
+  ├───────────────────┼────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ StatusRecord      │ Read model for status API (v0.0.3) │ event_id, status (queued/processing/processed/failed/duplicate), updated_at                          │
+  └───────────────────┴────────────────────────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+  ---
+  Status Enum Values (used across ResultEvent, StatusRecord, IdempotencyRecord)
+
+  - Processing states: queued, processing, processed, failed, duplicate
+  - Idempotency states: processed, duplicate, failed_retryable, failed_terminal
