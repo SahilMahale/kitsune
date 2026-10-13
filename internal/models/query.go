@@ -15,7 +15,7 @@ type LogQueryParams struct {
 // MetricQueryParams maps to query params for GET /query/metrics.
 type MetricQueryParams struct {
 	Name   string `query:"name"`
-	Source string `query:"source"` // instana, turbonomic, kube
+	Source string `query:"source"` // kube, prometheus, otlp
 	From   int64  `query:"from"`   // unix ms
 	To     int64  `query:"to"`     // unix ms
 }
